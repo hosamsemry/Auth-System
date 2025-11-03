@@ -3,6 +3,9 @@ from django.db import models
 from django.contrib.auth.models import (
     BaseUserManager, AbstractBaseUser, PermissionsMixin
 )
+from datetime import timedelta
+from django.utils import timezone
+from django.conf import settings
 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, password=None):
@@ -42,10 +45,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 
+def get_expiry_time():
+    """Return default expiration time (1 hour from now)."""
+    return timezone.now() + timedelta(hours=1)
+
 class Token(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="token")
-    key = models.CharField(max_length=100, default=uuid.uuid4, unique=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    key = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
+    refresh_key = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=get_expiry_time)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def refresh(self):
+        self.key = uuid.uuid4()
+        self.refresh_key = uuid.uuid4()
+        self.expires_at = timezone.now() + timedelta(hours=1)
+        self.save()
 
     def __str__(self):
         return f"{self.user.username} - {self.key}"
