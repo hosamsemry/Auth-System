@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'accounts',
+    'django_celery_beat', 
 ]
 
 MIDDLEWARE = [
@@ -43,6 +44,19 @@ REST_FRAMEWORK = {
         "accounts.authentication.CustomTokenAuthentication",
     ],
 }
+
+
+from datetime import timedelta
+
+CELERY_BEAT_SCHEDULE = {
+    'delete-expired-tokens-every-hour': {
+        'task': 'accounts.tasks.delete_expired_tokens',
+        'schedule': timedelta(hours=1),
+    },
+}
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
 
 
 ROOT_URLCONF = 'project.urls'
