@@ -42,3 +42,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.username
 
 
+class Token(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="token")
+    key = models.CharField(max_length=100, default=uuid.uuid4, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.key}"
+
